@@ -1,5 +1,5 @@
 (function(){
-  const KEY='shomrei_hatavlin_state_v1';
+  const KEY='shomrei_hatavlin_state_v2';
   const app=document.getElementById('app');
   const params=new URLSearchParams(location.search);
   const stationParam=params.get('station');
@@ -9,6 +9,7 @@
 
   function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
   function now(){return Date.now();}
+  function escapeHTML(str){return String(str==null?'':str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function load(){try{return JSON.parse(localStorage.getItem(KEY))||null}catch(e){return null}}
   function save(s){localStorage.setItem(KEY,JSON.stringify(s));}
   function fmt(sec){sec=Math.max(0,Math.floor(sec));const m=String(Math.floor(sec/60)).padStart(2,'0');const ss=String(sec%60).padStart(2,'0');return `${m}:${ss}`;}
@@ -17,7 +18,7 @@
   function C(id){return GAME_DATA.creatures[id];}
   function ct(id,field){const lang=getLang();return (C(id)[lang]&&C(id)[lang][field])||C(id).he[field];}
   function state(){let s=load(); if(!s) return null; if(langParam && s.lang!==langParam){s.lang=langParam; save(s);} return s;}
-  function createState(lang,name){const route=shuffle(GAME_DATA.stations);const s={lang,name:name||'',route,collected:[],stars:0,bonuses:0,bonusTimes:shuffle(SECRET_BASE),usedBonuses:[],start:now(),stationStart:now(),currentQuestion:0,mode:'map'};save(s);return s;}
+  function createState(lang,name){const route=shuffle(GAME_DATA.stations);const s={lang,name:escapeHTML((name||'').toString().trim()),route,collected:[],stars:0,bonuses:0,bonusTimes:shuffle(SECRET_BASE),usedBonuses:[],start:now(),stationStart:now(),currentQuestion:0,mode:'map'};save(s);return s;}
   function reset(){localStorage.removeItem(KEY); location.href=location.pathname+(langParam?`?lang=${langParam}`:'');}
   function screen(html){app.innerHTML=`<section class="screen">${html}</section>`;}
   function top(title){const s=state(); const elapsed=s?fmt((now()-s.start)/1000):'00:00'; return `<div class="topbar"><span class="pill timer">${elapsed}</span><span class="pill">${title||''}</span></div>`;}
