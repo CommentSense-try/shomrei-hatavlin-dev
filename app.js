@@ -9,6 +9,7 @@
 
   function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
   function now(){return Date.now();}
+  function escapeHTML(str){return String(str==null?'':str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function load(){try{return JSON.parse(localStorage.getItem(KEY))||null}catch(e){return null}}
   function save(s){localStorage.setItem(KEY,JSON.stringify(s));}
   function fmt(sec){sec=Math.max(0,Math.floor(sec));const m=String(Math.floor(sec/60)).padStart(2,'0');const ss=String(sec%60).padStart(2,'0');return `${m}:${ss}`;}
@@ -17,9 +18,10 @@
   function C(id){return GAME_DATA.creatures[id];}
   function ct(id,field){const lang=getLang();return (C(id)[lang]&&C(id)[lang][field])||C(id).he[field];}
   function state(){let s=load(); if(!s) return null; if(langParam && s.lang!==langParam){s.lang=langParam; save(s);} return s;}
-  function createState(lang,name){const route=shuffle(GAME_DATA.stations);const s={lang,name:name||'',route,collected:[],stars:0,bonuses:0,bonusTimes:shuffle(SECRET_BASE),usedBonuses:[],start:now(),stationStart:now(),currentQuestion:0,mode:'map'};save(s);return s;}
+  function createState(lang,name){const route=shuffle(GAME_DATA.stations);const s={lang,name:escapeHTML((name||'').toString().trim()),route,collected:[],stars:0,bonuses:0,bonusTimes:shuffle(SECRET_BASE),usedBonuses:[],start:now(),stationStart:now(),currentQuestion:0,mode:'map'};save(s);return s;}
   function reset(){localStorage.removeItem(KEY); location.href=location.pathname+(langParam?`?lang=${langParam}`:'');}
-  function screen(html){app.innerHTML=`<section class="screen">${html}</section>`;}
+  function applyDir(){const lang=getLang(); document.documentElement.dir = lang==='fr' ? 'ltr' : 'rtl'; document.documentElement.lang = lang;}
+  function screen(html){applyDir(); app.innerHTML=`<section class="screen">${html}</section>`;}
   function top(title){const s=state(); const elapsed=s?fmt((now()-s.start)/1000):'00:00'; return `<div class="topbar"><span class="pill timer">${elapsed}</span><span class="pill">${title||''}</span></div>`;}
   function img(id,cls=''){return `<img class="${cls}" src="${C(id).image}" alt="${ct(id,'name')}" onerror="this.outerHTML='<div style=&quot;font-size:54px&quot;>${C(id).emoji}</div>'">`;}
   function hero(){return `<div class="hero">${GAME_DATA.stations.map(id=>img(id)).join('')}</div>`;}
@@ -31,18 +33,11 @@
   function currentQ(s,id){return qset(id)[s.currentQuestion||0];}
   function letter(i){return ['א','ב','ג','ד'][i] || (i+1);}
 
-function renderOpening(){screen(`
-  <div class="langrow"><button class="btn secondary" data-lang="he">עברית</button><button class="btn secondary" data-lang="fr">Français</button></div>
-  <h1>${t('title')}</h1><div class="subtitle">${t('subtitle')}</div>${hero()}
-  <button class="btn" id="start">${t('start')}</button>
-`);
-document.getElementById('start').onclick=()=>renderStory();
-document.querySelectorAll('[data-lang]').forEach(b=>b.onclick=()=>{
-  createState(b.dataset.lang,'');
-  history.replaceState(null,'',location.pathname+'?lang='+b.dataset.lang);
-  renderOpening();
-});
-}
+  function renderOpening(){screen(`
+    <div class="langrow"><button class="btn secondary" data-lang="he">עברית</button><button class="btn secondary" data-lang="fr">Français</button></div>
+    <h1>${t('title')}</h1><div class="subtitle">${t('subtitle')}</div>${hero()}
+    <button class="btn" id="start">${t('start')}</button>
+  `); document.getElementById('start').onclick=()=>renderStory(); document.querySelectorAll('[data-lang]').forEach(b=>b.onclick=()=>{createState(b.dataset.lang,''); renderOpening(); history.replaceState(null,'',location.pathname+'?lang='+b.dataset.lang);});}
   function renderStory(){screen(`<h2>${t('storyTitle')}</h2><div class="story">${t('story').map(x=>`<p>${x}</p>`).join('')}</div><button class="btn" id="n">${t('next')}</button>`); document.getElementById('n').onclick=renderRules;}
   function renderRules(){screen(`<h2>${t('rulesTitle')}</h2><ul class="rules">${t('rules').map(x=>`<li>${x}</li>`).join('')}</ul><button class="btn" id="n">${t('next')}</button>`); document.getElementById('n').onclick=renderName;}
   function renderName(){screen(`<h2>${t('nameTitle')}</h2><input class="nameInput" id="name" placeholder="${t('namePlaceholder')}" /><button class="btn" id="go">${t('begin')}</button>`); document.getElementById('go').onclick=()=>{const lang=getLang(); const name=document.getElementById('name').value.trim(); createState(lang,name); renderMap();};}
